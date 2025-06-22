@@ -4,12 +4,13 @@ import "./shim.js";
 import {
   API,
   APIError,
+  convertPatternToRegExp,
   fromFileUrl,
-  normalize,
   parseEntrypoint,
   resolve,
   walk,
 } from "./deps.js";
+import process from "node:process";
 
 // The origin of the server to make Deploy requests to.
 const ORIGIN = process.env.DEPLOY_API_ENDPOINT ?? "https://dash.deno.com";
@@ -73,18 +74,26 @@ async function main() {
   }
 
   core.debug(`Discovering assets in "${cwd}"`);
-  const assets = new Map();
-  const entries = await walk(cwd, cwd, assets, {
-    include: include.flatMap((i) => i.split(",")).map((pattern) =>
-      normalize(pattern)
-    ),
-    exclude: exclude.flatMap((e) => e.split(",")).map((pattern) =>
-      normalize(pattern)
-    ),
-  });
+  const includes = include.flatMap((i) => i.split(",")).map((i) => i.trim());
+  const excludes = exclude.flatMap((e) => e.split(",")).map((i) => i.trim());
+  // Exclude node_modules by default unless explicitly specified
+  if (!includes.some((i) => i.includes("node_modules"))) {
+    excludes.push("**/node_modules");
+  }
+  const { manifestEntries: entries, hashPathMap: assets } = await walk(
+    cwd,
+    cwd,
+    {
+      include: includes.map(convertPatternToRegExp),
+      exclude: excludes.map(convertPatternToRegExp),
+    },
+  );
   core.debug(`Discovered ${assets.size} assets`);
 
-  const api = new API(`GitHubOIDC ${token}`, ORIGIN);
+  const api = new API(`GitHubOIDC ${token}`, ORIGIN, {
+    alwaysPrintDenoRay: true,
+    logger: core,
+  });
 
   const neededHashes = await api.projectNegotiateAssets(projectId, {
     entries,
@@ -114,7 +123,7 @@ async function main() {
     manifest,
     event: github.context.payload,
   };
-  const progress = api.gitHubActionsDeploy(projectId, req, files);
+  const progress = await api.gitHubActionsDeploy(projectId, req, files);
   let deployment;
   for await (const event of progress) {
     switch (event.type) {

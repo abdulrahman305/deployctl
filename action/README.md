@@ -26,7 +26,7 @@ You do **not** need to set up any secrets for this to work.
 You **do** need to link your GitHub repository to your Deno Deploy project. You
 have to choose the "GitHub Actions" deployment mode in your project settings on
 https://dash.deno.com. Read
-[Deno Deploy documenation](https://docs.deno.com/deploy/manual/ci_github#github-action)
+[Deno Deploy documentation](https://docs.deno.com/deploy/manual/ci_github#github-action)
 for more information.
 
 ### Permissions
@@ -40,7 +40,7 @@ jobs:
       id-token: write # required
       contents: read
     steps:
-      # your steps here...
+# your steps here...
 ```
 
 ### Inputs
