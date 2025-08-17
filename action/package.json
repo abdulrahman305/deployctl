@@ -5,6 +5,6 @@
     "@actions/github": "^6.0.0",
     "@deno/shim-deno": "^0.19.2",
     "formdata-polyfill": "^4.0.10",
-    "undici": "^5.28.4"
+    "undici": "^5.29.0"
   }
 }
